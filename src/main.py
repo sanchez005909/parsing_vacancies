@@ -44,7 +44,7 @@ else:
     print(f'Найдено {len(sorting_vacancies)} вакансий.')
 
     # вывод топ-вакансий
-    if count_top > len(sorting_vacancies):
+    if int(count_top) > len(sorting_vacancies):
         count_top = len(sorting_vacancies)
     print(f'Топ-{count_top} вакансий')
     top_vacancies = json_saver.get_top_vacancies(count_top, sorting_vacancies)
