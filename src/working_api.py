@@ -1,26 +1,23 @@
 from abc import ABC, abstractmethod
 import requests
-
+import os
+import pprint
 
 class WorkingAPI(ABC):
 
     @abstractmethod
-    def get_vacancies(self, pages):
+    def get_request(self):
+        pass
+
+    @abstractmethod
+    def get_vacancies(self):
         pass
 
 
 class WorkingAPIHH(WorkingAPI, ABC):
 
-    def __init__(self, text='', period=10, only_with_salary=False):
-        self.text = text
-        self.period = period
-        self.only_with_salary = only_with_salary
-
     def get_request(self, page=0):
         params = {'page': page,
-                  'text': self.text,
-                  'period': self.period,
-                  'only_with_salary': self.only_with_salary,
                   'per_page': 100}
         response = requests.get('https://api.hh.ru/vacancies', params=params)
         if response.status_code == 200:
@@ -37,13 +34,29 @@ class WorkingAPIHH(WorkingAPI, ABC):
         return vacancies
 
 
-# class WorkingAPISuperjob(WorkingAPI):
-#
-#     def __init__(self, text='', period=10, only_with_salary=False):
-#         self.text = text
-#         self.period = period
-#         self.only_with_salary = only_with_salary
-#
-#     def get_request(self):
-#         pass
+class WorkingAPISuperJob(WorkingAPI, ABC):
 
+    def get_request(self, page=0):
+        headers = {
+            'Host': 'api.superjob.ru',
+            'X-Api-App-Id': os.getenv('SuperJOB_API'),
+            'Authorization': 'Bearer r.000000010000001.example.access_token',
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+        params = {
+            'page': page,
+            'count': 20
+        }
+        response = requests.get('https://api.superjob.ru/2.0/vacancies/', headers=headers, params=params)
+        if response.status_code == 200:
+            return response.json()
+        return quit('Ошибка запроса!')
+
+
+    def get_vacancies(self):
+        result = self.get_request()["objects"]
+        vacancies = result
+        for page in range(1, 25):
+            res = self.get_request(page)["objects"]
+            vacancies.extend(res)
+        return vacancies

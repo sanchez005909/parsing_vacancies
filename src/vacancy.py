@@ -1,4 +1,22 @@
-class Vacancy:
+from abc import ABC, abstractmethod
+import re
+
+
+class Vacancy(ABC):
+    @abstractmethod
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def get_list_vacancies(self):
+        pass
+
+    @abstractmethod
+    def get_salary(self, vacancy):
+        pass
+
+
+class VacancyHH(Vacancy, ABC):
 
     def __init__(self, vacancies_list):
         self.vacancies_list = vacancies_list
@@ -7,13 +25,12 @@ class Vacancy:
         vacancies = []
         for vacancy in self.vacancies_list:
             salary_currency, salary_from, salary_to = self.get_salary(vacancy)
-            vacancy_dict = {}
             vacancy_dict = {'Должность': vacancy["name"],
-                               'Местоположение': vacancy["area"]["name"],
-                               'Зарплата': {'от': salary_from, 'до': salary_to, 'валюта': salary_currency},
-                               'Требование': vacancy['snippet']['requirement'],
-                               'Ссылка на вакансию': vacancy["alternate_url"],
-                               }
+                            'Местоположение': vacancy["area"]["name"],
+                            'Зарплата': {'от': salary_from, 'до': salary_to, 'валюта': salary_currency},
+                            'Описание': vacancy['snippet']['requirement'],
+                            'Ссылка на вакансию': vacancy["alternate_url"],
+                            }
             vacancies.append(vacancy_dict)
         return vacancies
 
@@ -32,5 +49,36 @@ class Vacancy:
             salary_to = 'не указано'
         return salary_currency, salary_from, salary_to
 
-    def __repr__(self):
-        return self.vacancies_list
+
+class VacancySuperJob(Vacancy, ABC):
+
+    def __init__(self, vacancies_list):
+        self.vacancies_list = vacancies_list
+
+    def get_list_vacancies(self):
+        vacancies = []
+        for vacancy in self.vacancies_list:
+            salary_currency, salary_from, salary_to = self.get_salary(vacancy)
+            print(vacancy['candidat'])
+            description = self.validation_data(vacancy['candidat'])
+            print(description)
+            vacancy_dict = {'Должность': vacancy["profession"],
+                            'Местоположение': vacancy["address"],
+                            'Зарплата': {'от': salary_from, 'до': salary_to, 'валюта': salary_currency},
+                            'Описание': vacancy['candidat'],
+                            'Ссылка на вакансию': vacancy["link"],
+                            }
+            vacancies.append(vacancy_dict)
+        return vacancies
+
+    @staticmethod
+    def validation_data(data):
+        res = re.sub(r'[^\w\s\\. ]', '', data)
+        return res
+
+    def get_salary(self, vacancy):
+        # print(vacancy, '\n')
+        salary_from = vacancy['payment_from']
+        salary_to = vacancy['payment_to']
+        salary_currency = vacancy['currency']
+        return salary_currency, salary_from, salary_to

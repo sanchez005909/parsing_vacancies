@@ -1,17 +1,30 @@
-from working_api import WorkingAPIHH
+from working_api import WorkingAPIHH, WorkingAPISuperJob
 from jsonsaver import JsonSaver
-from vacancy import Vacancy
-import pprint
+from vacancy import VacancyHH, VacancySuperJob
+from functions import get_filtering_data
 
-# объект для работы с АПИ HeadHunter
-obj = WorkingAPIHH('', 1, True)
+platform = int(input('Введите номер платформы для поиска(1 - HeadHunter, 2 - SuperJob): '))
+if platform == 1:
+    # объект для работы с АПИ HeadHunter
+    obj = WorkingAPIHH()
 
-# получить список всех вакансий(ограничение 2 000 вакансий)
-vacancies = obj.get_vacancies()
+    # получить список всех вакансий(ограничение 2 000 вакансий)
+    vacancies = obj.get_vacancies()
 
-# подготовка списка вакансий к записи в файл.json
-obj_vacancy = Vacancy(vacancies)
-vacancies = obj_vacancy.get_list_vacancies()
+    # подготовка списка вакансий к записи в файл.json
+    obj_vacancy = VacancyHH(vacancies)
+    vacancies = obj_vacancy.get_list_vacancies()
+
+elif platform == 0:
+    # объект для работы с АПИ SuperJob
+    obj = WorkingAPISuperJob()
+    # получить список всех вакансий(ограничение 500 вакансий)
+    vacancies = obj.get_vacancies()
+    # подготовка списка вакансий к записи в файл.json
+    obj_vacancy = VacancySuperJob(vacancies)
+    vacancies = obj_vacancy.get_list_vacancies()
+else:
+    quit('Выбранной платформы не существует')
 
 # объект класса JsonSaver
 json_saver = JsonSaver(vacancies)
@@ -19,15 +32,20 @@ json_saver = JsonSaver(vacancies)
 # сохранение списка вакансий в json - файл
 json_saver.save_to_json()
 
-# фильтр вакансий по поисковому запросу
-search_word = input('Введите поисковый запрос:')
-filter_vacancies = json_saver.filter_vacancies(search_word)
-if type(filter_vacancies) is list:
-    print(*filter_vacancies, sep='\n')
+search_word, sorting, count_top = get_filtering_data()
+if sorting == 2:
+    # фильтр вакансий по поисковому запросу
+    print(json_saver.filter_vacancies(search_word))
 else:
-    print(filter_vacancies)
+    # фильтр вакансий по поисковому запросу
+    filter_vacancies = json_saver.filter_vacancies(search_word)
+    # вывод отсортированного списка вакансий по ЗП (от)
+    sorting_vacancies = json_saver.sort_by_salary(filter_vacancies)
+    print(f'Найдено {len(sorting_vacancies)} вакансий.')
 
-# вывод отсортированного списка вакансий по ЗП (от)
-print(*json_saver.sort_by_salary(), sep='\n')
-
-
+    # вывод топ-вакансий
+    if count_top > len(sorting_vacancies):
+        count_top = len(sorting_vacancies)
+    print(f'Топ-{count_top} вакансий')
+    top_vacancies = json_saver.get_top_vacancies(count_top, sorting_vacancies)
+    print(*top_vacancies, sep='\n')
